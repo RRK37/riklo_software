@@ -1,2 +1,3 @@
-# my_software_tools
+# riklo_software
+
 Software that solves problems which I might reuse in the future. 
