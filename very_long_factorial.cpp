@@ -10,26 +10,55 @@ string rtrim(const string &);
  *
  * The function accepts INTEGER n as parameter.
  */
-
-std::uint64_t b_7 = 18302628885633695744;
-std::uint64_t b_6 = 18158513697557839872;
-std::uint64_t b_5 = 17870283321406128128;
-std::uint64_t b_4 = 17293822569102704640;
-std::uint64_t b_3 = 16140901064495857664;
-std::uint64_t b_2 = 13835058055282163712;
-std::uint64_t b_1 = 9223372036854775808;
-
+ 
+std::uint64_t last_x_bits_uint64(std::uint8_t b) {
+    
+    switch (b) {
+        case 0:
+            return 9223372036854775808;
+        case 1:
+            return 13835058055282163712;
+        case 2:
+            return 16140901064495857664;
+        case 3:
+            return 17293822569102704640;
+        case 4:
+            return 17870283321406128128;
+        case 5:
+            return 18158513697557839872;
+        case 6:
+            return 18302628885633695744;
+        default:
+            cout << "Invalid choice\n";
+    }
+}
 
 std::uint64_t* shift(std::uint64_t initial[9], std::uint8_t b) {
     
     std::uint64_t shifted[9];
+    shifted[0] = initial[0] << b;
+    
+    for (int i = 1; i < 9; i++) {
+        std::uint64_t overflow  = last_x_bits_uint64(b) & initial[i];
+        shifted[i-1]            += overflow;
+        shifted[i]              = initial[i] << b;
+    }
+    
     return shifted;    
 }
 
-std::uint64_t* accumilate(std::uint64_t shifted[9], std::uint64_t accumilated[9]) {
+std::uint64_t* add_uint64_x9(std::uint64_t shifted[9], std::uint64_t accumilated[9]) {
     
-    std::uint64_t accumilated[9];
-    return accumilated;    
+    uint64_t added[9];
+    
+    added[0] = shifted[0] * accumilated[0];
+    
+    for (int i = 1; i < 9; i++) {
+        added[i] = shifted[i] + accumilated[i];
+        if ( (shifted[i] > added[i])  and (accumilated[i] > added[i]) ) added[i-1]++;
+    }
+
+    return added;    
 }
 
 int get_nth_digit(std::uint64_t number, int digit) {
@@ -50,10 +79,9 @@ void extraLongFactorials(int n) {
     
     // Initial value which keeps track of the culmination of products at the start of each
     // loop. Starts at 1, since the first product is 1. 
-    std::uint64_t initial [9];
-    initial[0] = initial[1] = initial[2] = initial[3] = 
-    initial[4] = initial[5] = initial[6] = initial[7] = 0;
-    initial[8] = 1;
+    std::uint64_t initial [9]; // Big endian. initial[0] & initial [8] are most and least significant. 
+    for (int i = 0; i < 8; i++) initial[i] = 0;
+                                initial[8] = 1;
     
     for (std::uint8_t i = 2; i <= u_n; i++) { // Go through each of the factorial multipliers.
         std::uint64_t* accumilated;
@@ -61,13 +89,11 @@ void extraLongFactorials(int n) {
             if ((1 << b) & i) { // Chech if bit 'b' in 'i' is 1.
             
                 std::uint64_t* shifted  = shift(initial, b);
-                accumilated             = accumilate(accumilated, shifted);
-                
+                accumilated             = add_uint64_x9(accumilated, shifted);
+
             }
         }
-        initial[0] = accumilated[0]; initial[1] = accumilated[1]; initial[2] = accumilated[2];
-        initial[3] = accumilated[3]; initial[4] = accumilated[4]; initial[5] = accumilated[5];
-        initial[6] = accumilated[6]; initial[7] = accumilated[7]; initial[8] = accumilated[8];
+        for (int j = 0; j < 9; j++) initial[i] = accumilated[j]; // update initial.
     }
     
     std::uint64_t large_integer [9]; large_integer = initial;
@@ -96,9 +122,9 @@ void extraLongFactorials(int n) {
                     else accumilate += nth_digit;   
                 }
             }
-        accumilate += get_nth_digit(carry_over, 1); // Include the carry-over digit.
-        result = result + to_string(accumilate)[-1]; // Save the final digit to the result string. 
-        carry_over = carry_over/10 + accumilate /10; // Discard the smallest digit. (not needed)
+        accumilate += get_nth_digit(carry_over, 1); // Include the carry-over value for least-sig digit. 
+        result = result + to_string(accumilate)[-1]; // Save the least-sig digit to the result string. 
+        carry_over = carry_over/10 + accumilate /10; // Discard the least-sig digit, carry over accumilation.
         }
     }
     
